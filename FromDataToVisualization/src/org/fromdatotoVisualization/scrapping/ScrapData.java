@@ -2,7 +2,9 @@ package org.fromdatotoVisualization.scrapping;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.swing.text.html.HTML.Tag;
 
@@ -20,20 +22,20 @@ public class ScrapData {
 	 public static void main(String[] args) throws IOException {
 	       
 		 	// configuration connection proxy...
-	    	System.setProperty("http.proxyHost", "yyy.yyy.yyy.yyy");
-	    	System.setProperty("http.proxyPort", "8080");
-	    	System.setProperty("http.proxyUser", "xxx");
-	    	System.setProperty("http.proxyUser", "xxx");																														System.setProperty("http.proxyPassword", "xxxxxxxxx");
+	    	//System.setProperty("http.proxyHost", "yyy.yyy.yyy.yyy");
+	    	//System.setProperty("http.proxyPort", "8080");
+	    	//System.setProperty("http.proxyUser", "xxx");
+	    	//System.setProperty("http.proxyUser", "xxx");																														System.setProperty("http.proxyPassword", "xxxxxxxxx");
 	    	
 	    	// noticia de la palabra...
-	        String url = "http://www...";
+	        String url = "http://....";
 	        print("Fetching %s...", url);
 	        
 	        // Scraping WWW you can only use for this newspaper web.
-	        Document elmundoNewspaperHTML = Jsoup.connect(url).get();
+	        Document newspaperHTML = Jsoup.connect(url).get();
 	        System.out.println("TEXTO PARA ANALIZAR");
 	        
-	        Elements contents = elmundoNewspaperHTML.select("div[id=contenido]");
+	        Elements contents = newspaperHTML.select("div[id=contenido]");
 	        Elements articles = contents.get(0).select("article");
 	        
 	        for (Element article : articles) {
@@ -58,6 +60,11 @@ public class ScrapData {
 				
 			}
 	        
+	        CountWords cw = new CountWords();
+	        
+	        Map<String,String> mapa = new LinkedHashMap<String,String>();
+	        Map<String,List<String>> mapaFrase = new LinkedHashMap<String,List<String>>();
+	        
 	        // Limpieza de caracteres raros.
 	        for (String header : titulares) {
 				String[] titularSentence = header.split(" ");							
@@ -71,14 +78,53 @@ public class ScrapData {
 				for (String simpleSentence : titularSentence) { 
 					StemmForBigData stemm = new StemmForBigData();
 				
-					if (!stemm.preExecutedStoppingWord(simpleSentence))
+					if (!stemm.preExecutedStoppingWord(simpleSentence)) {
 						System.out.println(" Preprocesado de la raíz : [" + 
 								stemm.executeStemming(simpleSentence) + "]");
-					
+						
+						
+						//adding word map
+						mapa.put(stemm.executeStemming(simpleSentence) , simpleSentence);
+						
+						
+						//adding header map
+						List<String> temporalHeaders = null;
+						 if ((temporalHeaders = mapaFrase.get(stemm.executeStemming(simpleSentence)))== null) {						 
+							 temporalHeaders = new ArrayList<String>();
+						 	 temporalHeaders.add(header);
+						 }
+						 else {
+							 temporalHeaders.add(header);
+						 
+						 }
+						mapaFrase.put(stemm.executeStemming(simpleSentence), temporalHeaders);
+						
+						cw.count(stemm.executeStemming(simpleSentence));
+						
+					}
+														
 					//
 					System.out.println("original: " + simpleSentence);
 				}
+				
+				
 			}
+	        
+	        Map<String,Integer> example = cw.returnTenWordsOnHeap();
+			List<Integer> values = new ArrayList<Integer>(example.values());
+			List<String> key = new ArrayList<String>(example.keySet());
+			System.out.println("===========================================================");
+			System.out.println("The ten terms more used in news are:");
+			for (int j=key.size()-1; j>key.size()-10 ; j--)
+			{
+				
+				System.out.print("[Word:" + key.get(j) + " ===> " + mapa.get(key.get(j)));
+				System.out.print("[Header:" +  mapaFrase.get(key.get(j)));
+				System.out.println(" n= "+values.get(j) + "]");
+				
+				
+			}
+			System.out.println("===========================================================");
 	 }
 	 
 	 /**
@@ -98,19 +144,25 @@ public class ScrapData {
 				 caracteres[pos] == ':' || caracteres[pos] == '¿' ||
 				 caracteres[pos] == '?' || caracteres[pos] == ';' || caracteres[pos] == '\'') {
 				 
-		 		if (pos > 0 && pos < targetWordOfSentence.length()) {
+		 		if (pos > 0 && pos < targetWordOfSentence.length()-1) {
 		 			
 					String pre = targetWordOfSentence.substring(0, pos);
 					String post = targetWordOfSentence.substring(pos+1, targetWordOfSentence.length());
 					sentence[wordPositionInSentence] = pre.concat(post);
+					targetWordOfSentence = sentence[wordPositionInSentence];
+					 caracteres = targetWordOfSentence.toCharArray();
 					
 				} else if (pos == 0) {
 					
 					sentence[wordPositionInSentence] = targetWordOfSentence.substring(1, targetWordOfSentence.length());
+					targetWordOfSentence = sentence[wordPositionInSentence];
+					caracteres = targetWordOfSentence.toCharArray();
 					
 				} else if (pos == targetWordOfSentence.length()-1) {
 					
-					sentence[wordPositionInSentence] = targetWordOfSentence.substring(0, targetWordOfSentence.length()-1);
+					sentence[wordPositionInSentence] = targetWordOfSentence.substring(0, targetWordOfSentence.length()-2);
+					targetWordOfSentence = sentence[wordPositionInSentence];
+					 caracteres = targetWordOfSentence.toCharArray();
 				}
 			 }
 		}
