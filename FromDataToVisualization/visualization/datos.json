@@ -1,0 +1,9 @@
+{
+	"name": "titulares",
+	"children": [
+	{
+		"word": "ejemplo1", "num": "2"
+		"word": "ejemplo2", "num": "9"
+	}
+	]
+}
